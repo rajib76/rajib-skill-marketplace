@@ -1,0 +1,23 @@
+{
+  "name": "rajib-skill-marketplace",
+  "owner": {
+    "name": "Rajib Deb"
+  },
+  "metadata": {
+    "description": "Rajib's Claude Code plugins, each sourced from its own GitHub repo",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "hello-plugin",
+      "description": "Starter plugin with a friendly greeting skill",
+      "version": "1.0.0",
+      "source": {
+        "source": "github",
+        "repo": "rajib76/hello-plugin"
+      },
+      "category": "examples",
+      "keywords": ["starter", "example", "skill"]
+    }
+  ]
+}
