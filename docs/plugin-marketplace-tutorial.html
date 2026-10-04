@@ -158,6 +158,7 @@ ol.steps li { margin-bottom: 6px; }
         <li><a href="#separate">Plugins in their own repos</a></li>
         <li><a href="#team">Roll out to a team</a></li>
         <li><a href="#updates">Release updates</a></li>
+        <li><a href="#remove">Uninstall and remove</a></li>
         <li><a href="#trouble">Troubleshooting</a></li>
         <li><a href="#cheatsheet">Cheat sheet</a></li>
         <li><a href="#docs">Official docs</a></li>
@@ -170,7 +171,35 @@ ol.steps li { margin-bottom: 6px; }
         <h2><span class="num">01</span>What a plugin is</h2>
         <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/overview">Plugins overview</a> · <a href="https://code.claude.com/docs/en/plugins/components">Plugin components</a> · <a href="https://code.claude.com/docs/en/plugins/manifest-reference">Manifest reference</a></p>
         <p>A <strong>plugin</strong> is a folder that bundles extensions for Claude Code so you can install them as one unit. It can hold skills, slash commands, subagents, hooks and MCP servers. A file at <code>.claude-plugin/plugin.json</code> gives the plugin its name and version.</p>
-        <p>Skills, subagents, hooks and MCP servers all work on their own without a plugin. For example, a skill saved in <code>~/.claude/skills/</code> works in every project on your machine. Use a plugin when you want several of them packaged as one unit, to share with teammates, install in many projects, or publish as versioned releases.</p>
+        <h3>Plugin or skill?</h3>
+        <p>A <strong>skill</strong> is one capability: a folder with a <code>SKILL.md</code>. A <strong>plugin</strong> is a package that delivers one or more skills, along with other components, and is installed through a marketplace. In <code>rajib_marketplace</code> you can see all three layers:</p>
+        <div class="code"><div class="label">rajib_marketplace/</div><pre class="tree">rajib_marketplace/
+├── .claude-plugin/marketplace.json        <span class="c">← marketplace: the catalog of plugins</span>
+└── plugins/my-first-plugin/
+    ├── .claude-plugin/plugin.json         <span class="c">← plugin: the package</span>
+    └── skills/greetings-skill/SKILL.md    <span class="c">← skill: the capability</span></pre></div>
+        <div class="compare">
+          <div>
+            <h4>Standalone skill</h4>
+            <span class="who">~/.claude/skills/&lt;name&gt;/SKILL.md</span>
+            <ul>
+              <li>One capability: frontmatter (<code>name</code>, <code>description</code>) plus instructions, and optionally scripts or reference files</li>
+              <li>Needs no plugin. Save it in <code>~/.claude/skills/</code> for yourself, or in a repo's <code>.claude/skills/</code> for everyone on that repo</li>
+              <li>Shows up without a prefix, as <code>greetings-skill</code></li>
+              <li>Best for personal or single-repo use</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Plugin</h4>
+            <span class="who">&lt;plugin&gt;/.claude-plugin/plugin.json</span>
+            <ul>
+              <li>A bundle that can hold skills, commands, agents, hooks and MCP servers</li>
+              <li>Has a name and version; its skills appear with a prefix, as <code>my-first-plugin:greetings-skill</code></li>
+              <li>Distributed through a marketplace and installed, updated or removed as one unit</li>
+              <li>Best for sharing across people or repos, or for bundling a skill with hooks or tools</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="table-wrap"><table>
           <thead><tr><th>Component</th><th>Where it lives</th><th>What it does</th></tr></thead>
@@ -228,6 +257,8 @@ When a user says HI, ask for the name and then say HI &lt;Name&gt;</code></pre><
           <div class="node" role="listitem"><span class="tag">User runs</span><b>Install</b><small><code>/plugin install name@marketplace</code> fetches the plugin from its source</small></div>
           <div class="node" role="listitem"><span class="tag">Claude Code</span><b>Loads</b><small>Skills, commands and hooks are active in the next session</small></div>
         </div>
+
+        <div class="callout"><strong>Adding a marketplace doesn't install anything</strong><p>Add and install are separate steps. <code>marketplace add</code> only registers the catalog, so Claude Code knows where to look. <code>install</code> picks one plugin from it and enables it at a scope. A marketplace can list dozens of plugins and you may want two of them, and plugins can run code on your machine through hooks and MCP servers, so each one is installed on purpose. If a skill works right after you add a marketplace, it was installed too, often by accepting the prompt in the <code>/plugin</code> panel. You can check with <code>claude plugin list</code>.</p></div>
 
         <p>A plugin is always installed by its full id, <code>plugin-name@marketplace-name</code>. Both parts come from the <code>name</code> fields in the JSON files, not from folder or repo names. In the local example below, the folder is <code>rajib_marketplace</code> but the marketplace is named <code>my-marketplace</code>, so the id is <code>my-first-plugin@my-marketplace</code>.</p>
         <p>Claude Code adds Anthropic's official marketplace, <code>claude-plugins-official</code>, the first time you start an interactive session. Anthropic's marketplace names are reserved for repos under <code>github.com/anthropics/</code>, so your own marketplace is a third-party one and can't use them. A plugin marketplace is also different from <a href="https://claude.com/marketplace">Claude Marketplace</a>, the website on claude.com.</p>
@@ -490,8 +521,34 @@ claude plugin install hello-plugin@rajib-skill-marketplace --scope project</code
       </section>
 
       <!-- 9 -->
+      <section id="remove">
+        <h2><span class="num">09</span>Uninstall and remove</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/install">Install and manage plugins</a></p>
+        <h3>Uninstall a plugin</h3>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>claude plugin uninstall my-first-plugin@my-marketplace</code></pre></div>
+        <p>Inside a session, run <code>/plugin uninstall my-first-plugin@my-marketplace</code>, or open <code>/plugin</code>, choose the plugin and pick <strong>Uninstall</strong>. The marketplace stays registered, so you can reinstall any time with <code>claude plugin install my-first-plugin@my-marketplace</code>.</p>
+        <ul>
+          <li>Run <code>claude plugin list</code> to see the exact <code>plugin@marketplace</code> ids you have installed.</li>
+          <li>If the plugin was installed at project scope, add <code>--scope project</code>. The default is user scope.</li>
+        </ul>
+        <h3>Disable instead of uninstall</h3>
+        <p>To pause a plugin without removing it, disable it. This sets it to <code>false</code> under <code>enabledPlugins</code> in your settings, and enabling it turns it back on.</p>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>claude plugin disable my-first-plugin@my-marketplace
+claude plugin enable my-first-plugin@my-marketplace</code></pre></div>
+        <h3>Remove a marketplace</h3>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>claude plugin marketplace remove my-marketplace
+claude plugin marketplace list</code></pre></div>
+        <p>Inside a session, run <code>/plugin marketplace remove my-marketplace</code>, or pick the marketplace in <code>/plugin</code>. Use the marketplace's <code>name</code> from <code>marketplace.json</code>, not its folder or repo name.</p>
+        <div class="callout warn"><strong>Removing a marketplace also uninstalls its plugins</strong><p>Removing a marketplace from its last scope uninstalls the plugins installed from it. If <code>claude plugin list</code> still shows one afterwards, uninstall it as above. To refresh a marketplace without losing anything, use <code>marketplace update</code> instead.</p></div>
+        <p>Your files stay where they are. For a marketplace added from a local folder, removing it deletes only Claude Code's registration and any cached copy under <code>~/.claude/plugins/cache/&lt;marketplace&gt;/</code>, not the folder itself. Uninstall and remove take effect in the next session or after <code>/reload-plugins</code>.</p>
+        <p>To add it back later:</p>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>claude plugin marketplace add ~/PycharmProjects/rajib_marketplace
+claude plugin install my-first-plugin@my-marketplace</code></pre></div>
+      </section>
+
+      <!-- 10 -->
       <section id="trouble">
-        <h2><span class="num">09</span>Troubleshooting</h2>
+        <h2><span class="num">10</span>Troubleshooting</h2>
         <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/troubleshooting">Troubleshoot plugins</a> · <a href="https://code.claude.com/docs/en/plugins/host-marketplace#grant-access-to-a-private-marketplace">Grant access to a private marketplace</a></p>
 
         <h3>“git@github.com: Permission denied (publickey)”</h3>
@@ -515,9 +572,9 @@ claude plugin install hello-plugin@rajib-skill-marketplace --scope project</code
         <p>For a hosted marketplace, bump the plugin <code>version</code>, run <code>/plugin marketplace update</code>, and update the plugin. For a local-folder marketplace, run <code>/reload-plugins</code>. Check the Errors tab in <code>/plugin</code> for load errors.</p>
       </section>
 
-      <!-- 10 -->
+      <!-- 11 -->
       <section id="cheatsheet">
-        <h2><span class="num">10</span>Cheat sheet</h2>
+        <h2><span class="num">11</span>Cheat sheet</h2>
         <div class="table-wrap"><table>
           <thead><tr><th>Task</th><th>Command</th></tr></thead>
           <tbody>
@@ -540,9 +597,9 @@ claude plugin install hello-plugin@rajib-skill-marketplace --scope project</code
         </table></div>
       </section>
 
-      <!-- 11 -->
+      <!-- 12 -->
       <section id="docs">
-        <h2><span class="num">11</span>Official docs</h2>
+        <h2><span class="num">12</span>Official docs</h2>
         <p>This tutorial follows the Claude Code documentation. Start with the overview, then read the page for the step you're on.</p>
         <ul class="refs">
           <li><a href="https://code.claude.com/docs/en/plugins/overview">Plugins overview</a><span>What a plugin and a marketplace are, install scopes, and when you need a plugin</span></li>
