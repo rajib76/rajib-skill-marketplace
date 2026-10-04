@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Claude Code Plugin Marketplaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky table of contents on the left, one reading column on the right; stacks to a single column on phones. */
+:root {
+  --bg: #f5f7f8;
+  --surface: #ffffff;
+  --ink: #16212b;
+  --muted: #56636f;
+  --line: #d9e0e5;
+  --accent: #0b6e6e;
+  --accent-soft: #e1f0ef;
+  --code-bg: #eef2f4;
+  --warn: #8a5300;
+  --warn-soft: #fbf0dc;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1519; --surface: #161e24; --ink: #e3e9ed; --muted: #97a4ae; --line: #2a353d;
+    --accent: #5cc6c2; --accent-soft: #15302f; --code-bg: #11191e; --warn: #f0b860; --warn-soft: #2e2413;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1519; --surface: #161e24; --ink: #e3e9ed; --muted: #97a4ae; --line: #2a353d;
+  --accent: #5cc6c2; --accent-soft: #15302f; --code-bg: #11191e; --warn: #f0b860; --warn-soft: #2e2413;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.65 var(--font-body);
+  padding-inline: 16px; padding-block: 0 64px;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.page { max-width: 1120px; margin: 0 auto; }
+
+header.hero { padding-block: 56px 36px; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
+.eyebrow { font: 600 12px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; }
+h1 { font-weight: 800; font-size: clamp(2.1rem, 5vw, 3.3rem); margin: 14px 0 14px; letter-spacing: -.02em; }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 62ch; margin: 0; }
+.hero-cmd { margin-top: 24px; display: inline-flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+  font: 14px var(--font-mono); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; max-width: 100%; }
+.hero-cmd span { color: var(--muted); }
+
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 56px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 14px; }
+nav.toc p { font: 600 11px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; counter-reset: toc; }
+nav.toc li { counter-increment: toc; }
+nav.toc a { display: flex; gap: 10px; padding: 5px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+nav.toc a::before { content: counter(toc, decimal-leading-zero); font: 12px/1.9 var(--font-mono); color: var(--muted); }
+nav.toc a:hover { background: var(--accent-soft); }
+
+main { min-width: 0; }
+section { padding-bottom: 28px; margin-bottom: 36px; border-bottom: 1px solid var(--line); scroll-margin-top: 20px; }
+section:last-child { border-bottom: 0; }
+h2 { font-weight: 800; font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 6px; letter-spacing: -.01em; }
+h2 .num { font: 600 13px var(--font-mono); color: var(--accent); display: block; margin-bottom: 8px; letter-spacing: .06em; }
+h3 { font-weight: 600; font-size: 1.2rem; margin: 30px 0 8px; }
+p, li { max-width: 68ch; }
+main p { margin: 0 0 14px; }
+code { font: .88em var(--font-mono); background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+
+.code { position: relative; margin: 14px 0 20px; border: 1px solid var(--line); border-radius: 8px; background: var(--code-bg); }
+.code .label { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  font: 12px var(--font-mono); color: var(--muted); padding: 7px 12px; border-bottom: 1px solid var(--line); }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 13.5px/1.6 var(--font-mono); color: var(--ink); }
+.code pre code { background: none; padding: 0; font-size: inherit; }
+.copy { font: 600 11px var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent);
+  background: transparent; border: 1px solid var(--line); border-radius: 5px; padding: 3px 8px; cursor: pointer; }
+.copy:hover { background: var(--accent-soft); }
+.c { color: var(--muted); }
+.k { color: var(--accent); }
+
+.table-wrap { overflow-x: auto; margin: 14px 0 22px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px var(--font-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--code-bg); }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+
+.callout { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: var(--accent-soft);
+  padding: 12px 16px; border-radius: 6px; margin: 16px 0 20px; }
+.callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+.callout strong { display: block; margin-bottom: 2px; }
+.callout p:last-child { margin-bottom: 0; }
+
+/* Flow diagram */
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 18px 0 24px; }
+.flow .node { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; position: relative; min-width: 0; }
+.flow .node b { font-family: var(--font-display); font-size: 1.02rem; display: block; margin-bottom: 4px; }
+.flow .node small { color: var(--muted); font-size: 13px; line-height: 1.45; display: block; }
+.flow .node .tag { font: 11px var(--font-mono); color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+.flow .node:not(:last-child)::after { content: "→"; position: absolute; right: -14px; top: 50%; transform: translate(50%, -50%);
+  color: var(--accent); font: 600 16px var(--font-mono); }
+
+.tree { font: 13.5px/1.7 var(--font-mono); }
+.docref { font: 13px/1.5 var(--font-mono); color: var(--muted); margin: 0 0 18px; }
+.docref a { color: var(--accent); }
+.refs { list-style: none; padding: 0; display: grid; gap: 10px; }
+.refs li { max-width: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+.refs a { font-weight: 600; }
+.refs span { display: block; color: var(--muted); font-size: 14px; }
+
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0 22px; }
+.compare > div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; min-width: 0; }
+.compare h4 { font-family: var(--font-display); font-size: 1.05rem; margin: 0 0 4px; }
+.compare .who { font: 12px var(--font-mono); color: var(--accent); margin-bottom: 10px; display: block; overflow-wrap: anywhere; }
+.compare ul { margin: 0; padding-left: 18px; font-size: 14.5px; }
+
+ol.steps { padding-left: 22px; }
+ol.steps li { margin-bottom: 6px; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  nav.toc { position: static; border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface); margin-bottom: 28px; }
+  .flow { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .flow .node:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -11px; transform: translate(50%, 50%); }
+  .compare { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow">Claude Code · Tutorial</div>
+    <h1>Plugin marketplaces, from first skill to shared catalog</h1>
+    <p class="lede">What plugins and marketplaces are, how to build both, and how to share them, using two real examples: a local marketplace that bundles its plugins, and a GitHub marketplace that points at separate plugin repos. Every section links to the matching page of the <a href="https://code.claude.com/docs/en/plugins/overview">official Claude Code plugin docs</a>.</p>
+    <div class="hero-cmd"><span>try it →</span> /plugin marketplace add rajib76/rajib-skill-marketplace</div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p>Contents</p>
+      <ol>
+        <li><a href="#plugin">What a plugin is</a></li>
+        <li><a href="#marketplace">What a marketplace is</a></li>
+        <li><a href="#layouts">Two ways to organize</a></li>
+        <li><a href="#local">Build a local marketplace</a></li>
+        <li><a href="#github">Publish on GitHub</a></li>
+        <li><a href="#separate">Plugins in their own repos</a></li>
+        <li><a href="#team">Roll out to a team</a></li>
+        <li><a href="#updates">Release updates</a></li>
+        <li><a href="#trouble">Troubleshooting</a></li>
+        <li><a href="#cheatsheet">Cheat sheet</a></li>
+        <li><a href="#docs">Official docs</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <!-- 1 -->
+      <section id="plugin">
+        <h2><span class="num">01</span>What a plugin is</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/overview">Plugins overview</a> · <a href="https://code.claude.com/docs/en/plugins/components">Plugin components</a> · <a href="https://code.claude.com/docs/en/plugins/manifest-reference">Manifest reference</a></p>
+        <p>A <strong>plugin</strong> is a folder that bundles extensions for Claude Code so you can install them as one unit. It can hold skills, slash commands, subagents, hooks and MCP servers. A file at <code>.claude-plugin/plugin.json</code> gives the plugin its name and version.</p>
+        <p>Skills, subagents, hooks and MCP servers all work on their own without a plugin. For example, a skill saved in <code>~/.claude/skills/</code> works in every project on your machine. Use a plugin when you want several of them packaged as one unit, to share with teammates, install in many projects, or publish as versioned releases.</p>
+
+        <div class="table-wrap"><table>
+          <thead><tr><th>Component</th><th>Where it lives</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td>Manifest</td><td><code>.claude-plugin/plugin.json</code></td><td>Name, version, description and author. Required.</td></tr>
+            <tr><td>Skills</td><td><code>skills/&lt;name&gt;/SKILL.md</code></td><td>Instructions Claude loads when the skill's <code>description</code> matches the task. You can also invoke one as <code>/plugin-name:skill-name</code>.</td></tr>
+            <tr><td>Commands</td><td><code>commands/&lt;name&gt;.md</code></td><td>Slash commands you type yourself.</td></tr>
+            <tr><td>Agents</td><td><code>agents/&lt;name&gt;.md</code></td><td>Subagents with their own prompt and tool list.</td></tr>
+            <tr><td>Hooks</td><td><code>hooks/hooks.json</code></td><td>Shell commands that run on events, such as before a tool call.</td></tr>
+            <tr><td>MCP servers</td><td><code>.mcp.json</code></td><td>Tool servers Claude Code connects to while the plugin is enabled.</td></tr>
+            <tr><td>Hooks module</td><td>see <a href="https://code.claude.com/docs/en/plugins/mods/overview">mods</a></td><td>Hooks written as JavaScript functions that can also draw panes and add commands. A plugin with one is called a mod.</td></tr>
+          </tbody>
+        </table></div>
+
+        <p>The smallest useful plugin is a manifest plus one skill. This is <code>my-first-plugin</code> from the local example:</p>
+        <div class="code"><div class="label">my-first-plugin/</div><pre class="tree">my-first-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+└── skills/
+    └── greetings-skill/
+        └── SKILL.md</pre></div>
+
+        <div class="code"><div class="label"><span>.claude-plugin/plugin.json</span><button class="copy" type="button">Copy</button></div><pre><code>{
+  "name": "my-first-plugin",
+  "description": "A greeting plugin to learn the basics",
+  "version": "1.0.0",
+  "author": {
+    "name": "Rajib Deb"
+  }
+}</code></pre></div>
+
+        <div class="code"><div class="label"><span>skills/greetings-skill/SKILL.md</span><button class="copy" type="button">Copy</button></div><pre><code>---
+name: greetings-skill
+description: Use this skill to greet the user
+---
+
+When a user says HI, ask for the name and then say HI &lt;Name&gt;</code></pre></div>
+
+        <div class="callout"><strong>The description decides when a skill runs</strong><p>Claude reads every installed skill's <code>description</code> and loads the full <code>SKILL.md</code> only when the task matches. Say what the skill does and when to use it, for example "Greet the user. Use when the user says hi or hello."</p></div>
+
+        <div class="callout warn"><strong>Enabled plugins cost context in every session</strong><p>The docs point out that an enabled plugin is part of every session, not only the ones where you use it. The name and description of each skill, agent and command sit in Claude's context on every turn, its MCP servers run alongside each session, and its hooks fire on their events. Everything a plugin runs, it runs as you. Disable plugins you aren't using, and see <a href="https://code.claude.com/docs/en/plugins/security">Plugin security and trust</a> before installing one from someone else.</p></div>
+
+        <p>While you're developing a plugin you don't need a marketplace at all. Load it straight from its folder with <code>claude --plugin-dir ./my-first-plugin</code>.</p>
+      </section>
+
+      <!-- 2 -->
+      <section id="marketplace">
+        <h2><span class="num">02</span>What a marketplace is</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/overview#get-plugins-from-a-marketplace">Get plugins from a marketplace</a> · <a href="https://code.claude.com/docs/en/plugins/install">Install and manage plugins</a></p>
+        <p>A <strong>marketplace</strong> is a catalog of plugins. It's a single file, <code>.claude-plugin/marketplace.json</code>, that names the marketplace and lists each plugin with a <code>source</code> saying where to get it. The marketplace doesn't run anything itself. It tells Claude Code what's available and where to download it.</p>
+
+        <div class="flow" role="list">
+          <div class="node" role="listitem"><span class="tag">You publish</span><b>Marketplace</b><small>A repo or folder with <code>marketplace.json</code></small></div>
+          <div class="node" role="listitem"><span class="tag">User runs</span><b>Add</b><small><code>/plugin marketplace add</code> copies the catalog locally</small></div>
+          <div class="node" role="listitem"><span class="tag">User runs</span><b>Install</b><small><code>/plugin install name@marketplace</code> fetches the plugin from its source</small></div>
+          <div class="node" role="listitem"><span class="tag">Claude Code</span><b>Loads</b><small>Skills, commands and hooks are active in the next session</small></div>
+        </div>
+
+        <p>A plugin is always installed by its full id, <code>plugin-name@marketplace-name</code>. Both parts come from the <code>name</code> fields in the JSON files, not from folder or repo names. In the local example below, the folder is <code>rajib_marketplace</code> but the marketplace is named <code>my-marketplace</code>, so the id is <code>my-first-plugin@my-marketplace</code>.</p>
+        <p>Claude Code adds Anthropic's official marketplace, <code>claude-plugins-official</code>, the first time you start an interactive session. Anthropic's marketplace names are reserved for repos under <code>github.com/anthropics/</code>, so your own marketplace is a third-party one and can't use them. A plugin marketplace is also different from <a href="https://claude.com/marketplace">Claude Marketplace</a>, the website on claude.com.</p>
+
+        <h3>Install scopes</h3>
+        <p>When you install, you choose who gets the plugin:</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Scope</th><th>Saved in</th><th>Who gets it</th></tr></thead>
+          <tbody>
+            <tr><td><code>user</code></td><td><code>~/.claude/settings.json</code></td><td>You, in every project. This is the default.</td></tr>
+            <tr><td><code>project</code></td><td><code>.claude/settings.json</code> (committed)</td><td>Everyone who works in the repo. Each collaborator still installs it on their own machine.</td></tr>
+            <tr><td><code>local</code></td><td><code>.claude/settings.local.json</code> (not committed)</td><td>Only you, only in this repo.</td></tr>
+          </tbody>
+        </table></div>
+        <p>Plugins from a git or URL source are copied into a cache under <code>~/.claude/plugins/cache/&lt;marketplace&gt;/&lt;plugin&gt;/&lt;version&gt;/</code>. Plugins from a marketplace you added as a local folder load in place from that folder. Cloud sessions, including claude.ai/code, don't load the plugins in your local settings.</p>
+      </section>
+
+      <!-- 3 -->
+      <section id="layouts">
+        <h2><span class="num">03</span>Two ways to organize a marketplace</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/create-marketplace#choose-a-plugin-source">Choose a plugin source</a> · <a href="https://code.claude.com/docs/en/plugins/marketplace-reference#plugin-sources">Plugin sources reference</a></p>
+        <p>The <code>source</code> field on each plugin entry decides the layout. This tutorial builds one marketplace of each kind.</p>
+        <div class="compare">
+          <div>
+            <h4>A · Plugins inside the marketplace</h4>
+            <span class="who">~/PycharmProjects/rajib_marketplace</span>
+            <ul>
+              <li><code>"source": "./plugins/my-first-plugin"</code></li>
+              <li>One repo to maintain; a single commit changes catalog and plugin together</li>
+              <li>Works from a local folder, before anything is pushed</li>
+              <li>Best for a personal or team collection</li>
+            </ul>
+          </div>
+          <div>
+            <h4>B · Each plugin in its own repo</h4>
+            <span class="who">github.com/rajib76/rajib-skill-marketplace</span>
+            <ul>
+              <li><code>"source": {"source": "url", "url": "https://github.com/…/hello-plugin.git"}</code></li>
+              <li>Each plugin has its own history, issues and owners</li>
+              <li>The marketplace can list plugins written by other people</li>
+              <li>Best when plugins are maintained separately</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>Source types</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Source</th><th>Example</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Relative path</td><td><code>"./plugins/my-first-plugin"</code></td><td>Path inside the marketplace repo. Must start with <code>./</code>.</td></tr>
+            <tr><td><code>url</code></td><td><code>{"source": "url", "url": "https://github.com/rajib76/hello-plugin.git"}</code></td><td>Any git URL. An HTTPS URL clones over HTTPS, so users don't need SSH keys.</td></tr>
+            <tr><td><code>github</code></td><td><code>{"source": "github", "repo": "rajib76/hello-plugin"}</code></td><td>Shorthand for GitHub. Claude Code tries SSH first, then HTTPS; see <a href="#trouble">Troubleshooting</a>.</td></tr>
+            <tr><td><code>git-subdir</code></td><td><code>{"source": "git-subdir", "url": "rajib76/monorepo", "path": "tools/my-plugin"}</code></td><td>A plugin in a subfolder of another repo, such as a monorepo. <code>url</code> takes a git URL or <code>owner/repo</code>.</td></tr>
+            <tr><td><code>archive</code></td><td><code>{"source": "archive", "url": "https://…/my-plugin.zip"}</code></td><td>A zip downloaded over HTTPS. Users need no git and no account. Pin it with <code>sha256</code>.</td></tr>
+            <tr><td><code>npm</code>, <code>command</code></td><td colspan="1">see reference</td><td>An npm package, or a folder produced by running a command on the user's machine.</td></tr>
+          </tbody>
+        </table></div>
+        <p>The <code>github</code>, <code>url</code> and <code>git-subdir</code> sources can also take <code>"ref"</code> (a branch or tag) or <code>"sha"</code> (an exact commit) to pin the version users get.</p>
+        <div class="callout"><strong>Keep the entry name and the plugin name the same</strong><p>The entry <code>name</code> in <code>marketplace.json</code> is the install id. The <code>name</code> in <code>plugin.json</code> is the prefix on the plugin's skills. The docs say most failed installs come from these two names differing, or from a relative path written from the wrong folder. Write relative paths from the marketplace root (the folder that contains <code>.claude-plugin/</code>), and never use <code>..</code>.</p></div>
+      </section>
+
+      <!-- 4 -->
+      <section id="local">
+        <h2><span class="num">04</span>Build a local marketplace</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/create">Create a plugin</a> · <a href="https://code.claude.com/docs/en/plugins/create-marketplace">Create a marketplace</a></p>
+        <p>This rebuilds <code>rajib_marketplace</code> from scratch. Nothing needs to be on GitHub yet.</p>
+
+        <h3>Step 1 · Create the folders</h3>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>mkdir -p rajib_marketplace/.claude-plugin
+mkdir -p rajib_marketplace/plugins/my-first-plugin/.claude-plugin
+mkdir -p rajib_marketplace/plugins/my-first-plugin/skills/greetings-skill
+cd rajib_marketplace</code></pre></div>
+
+        <h3>Step 2 · Write the plugin</h3>
+        <p>Save the <code>plugin.json</code> and <code>SKILL.md</code> from <a href="#plugin">section 01</a> into <code>plugins/my-first-plugin/</code>. The finished layout:</p>
+        <div class="code"><div class="label">rajib_marketplace/</div><pre class="tree">rajib_marketplace/
+├── .claude-plugin/
+│   └── marketplace.json          <span class="c">← the catalog</span>
+└── plugins/
+    └── my-first-plugin/
+        ├── .claude-plugin/
+        │   └── plugin.json       <span class="c">← the plugin manifest</span>
+        └── skills/
+            └── greetings-skill/
+                └── SKILL.md</pre></div>
+
+        <h3>Step 3 · Write the catalog</h3>
+        <div class="code"><div class="label"><span>.claude-plugin/marketplace.json</span><button class="copy" type="button">Copy</button></div><pre><code>{
+  "name": "my-marketplace",
+  "description": "Plugins for my team",
+  "owner": {
+    "name": "Rajib Deb"
+  },
+  "plugins": [
+    {
+      "name": "my-first-plugin",
+      "source": "./plugins/my-first-plugin",
+      "description": "A greeting plugin to learn the basics"
+    }
+  ]
+}</code></pre></div>
+        <p>Fields: <code>name</code> is the id users type after <code>@</code>. Use lowercase with hyphens. <code>owner</code> needs a <code>name</code>; <code>email</code> is optional. Each entry in <code>plugins</code> needs a <code>name</code> and a <code>source</code>.</p>
+
+        <h3>Step 4 · Validate</h3>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>claude plugin validate .
+<span class="c"># ✔ Validation passed</span></code></pre></div>
+        <p>Run the same command on a plugin folder to check its <code>plugin.json</code>. Validation checks JSON syntax, required fields, naming rules and paths containing <code>..</code>. It doesn't fetch remote sources, so a wrong repo or a missing folder only shows up when you install.</p>
+
+        <h3>Step 5 · Add it and install</h3>
+        <p>From your shell, add the folder by path, install by id, and check what loaded:</p>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>claude plugin marketplace add ~/PycharmProjects/rajib_marketplace
+claude plugin install my-first-plugin@my-marketplace
+claude plugin list
+claude plugin details my-first-plugin</code></pre></div>
+        <p>Inside a session, <code>/plugin marketplace add</code> does the same thing, and <code>/plugin install my-first-plugin@my-marketplace</code> opens the plugin's details in the <code>/plugin</code> panel, where you confirm the install and pick a scope.</p>
+        <p>Start a new session and say <em>HI</em>. Claude asks for your name and greets you. You can also call the skill directly with <code>/my-first-plugin:greetings-skill</code>.</p>
+        <div class="callout"><strong>Edits to a local marketplace</strong><p>A marketplace added from a local folder loads relative-path plugins from that folder, so your edits take effect at the next session start, or right away with <code>/reload-plugins</code>. You don't need to bump <code>version</code>. People who install from the hosted copy get a cached copy instead; see <a href="#updates">Release updates</a>.</p></div>
+      </section>
+
+      <!-- 5 -->
+      <section id="github">
+        <h2><span class="num">05</span>Publish on GitHub</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/host-marketplace">Host and maintain a marketplace</a> · <a href="https://code.claude.com/docs/en/plugins/publish">Publish and distribute a plugin</a></p>
+        <p>To share a marketplace, push its folder to a GitHub repo. Users add it with the <code>owner/repo</code> shorthand, and relative plugin paths keep working because Claude Code clones the whole repo.</p>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>cd rajib_marketplace
+git init -b main
+git add -A
+git commit -m "Create my-marketplace"
+gh repo create rajib76/rajib_marketplace --public --source . --push</code></pre></div>
+        <p>Anyone can now run:</p>
+        <div class="code"><div class="label"><span>claude code</span><button class="copy" type="button">Copy</button></div><pre><code>/plugin marketplace add rajib76/rajib_marketplace
+/plugin install my-first-plugin@my-marketplace</code></pre></div>
+        <p>Claude Code takes the marketplace name from the <code>name</code> field in <code>marketplace.json</code>, not from the repo name. <code>marketplace add</code> accepts other forms too:</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Host</th><th>Users run</th></tr></thead>
+          <tbody>
+            <tr><td>GitHub</td><td><code>/plugin marketplace add rajib76/rajib_marketplace</code></td></tr>
+            <tr><td>GitHub, pinned to a branch or tag</td><td><code>/plugin marketplace add rajib76/rajib_marketplace#stable</code></td></tr>
+            <tr><td>GitLab, Bitbucket, other git hosts</td><td><code>/plugin marketplace add https://gitlab.example.com/team/plugins.git</code></td></tr>
+            <tr><td>Hosted file</td><td><code>/plugin marketplace add https://plugins.example.com/marketplace.json</code></td></tr>
+            <tr><td>Shared folder</td><td><code>/plugin marketplace add /Volumes/shared/claude-plugins</code></td></tr>
+          </tbody>
+        </table></div>
+        <p>A marketplace added as a bare <code>marketplace.json</code> URL downloads only that file, so relative-path entries fail. Use a git repo, or give every entry a remote source. Also keep plugin files out of Git LFS, because the clone never downloads LFS content.</p>
+        <div class="callout"><strong>Public or private</strong><p>A private repo works for anyone whose git can already clone it without prompting. Claude Code runs <code>git</code> with prompts turned off and has no token of its own, and <code>marketplace.json</code> has no field for credentials. For HTTPS on GitHub, users run <code>gh auth login</code> and then <code>gh auth setup-git</code>. For SSH, the key must be loaded in <code>ssh-agent</code>.</p></div>
+      </section>
+
+      <!-- 6 -->
+      <section id="separate">
+        <h2><span class="num">06</span>Plugins in their own repos</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/create-marketplace#add-plugin-entries">Add plugin entries</a> · <a href="https://code.claude.com/docs/en/plugins/marketplace-reference#plugin-entries">Plugin entry fields</a></p>
+        <p>The second example, <a href="https://github.com/rajib76/rajib-skill-marketplace">rajib76/rajib-skill-marketplace</a>, holds only the catalog. Its one plugin, <code>hello-plugin</code>, lives in <a href="https://github.com/rajib76/hello-plugin">rajib76/hello-plugin</a>.</p>
+
+        <h3>Step 1 · Create the plugin repo</h3>
+        <p>A plugin repo has the plugin at its root:</p>
+        <div class="code"><div class="label">hello-plugin/ (its own repo)</div><pre class="tree">hello-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+├── skills/
+│   └── hello/
+│       └── SKILL.md
+└── README.md</pre></div>
+        <div class="code"><div class="label"><span>skills/hello/SKILL.md</span><button class="copy" type="button">Copy</button></div><pre><code>---
+name: hello
+description: Greet the user warmly. Use when the user says hello, asks for a greeting, or wants to test that hello-plugin is installed.
+---
+
+# Hello
+
+Greet the user by name if you know it, in one or two friendly sentences.
+Then confirm that the `hello-plugin` from the rajib-skill-marketplace is installed and working.</code></pre></div>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>cd hello-plugin
+claude plugin validate .
+git init -b main &amp;&amp; git add -A &amp;&amp; git commit -m "Initial hello-plugin"
+gh repo create rajib76/hello-plugin --public --source . --push</code></pre></div>
+
+        <h3>Step 2 · Point the catalog at it</h3>
+        <p>The marketplace repo contains only <code>.claude-plugin/marketplace.json</code> and a README:</p>
+        <div class="code"><div class="label"><span>rajib-skill-marketplace/.claude-plugin/marketplace.json</span><button class="copy" type="button">Copy</button></div><pre><code>{
+  "name": "rajib-skill-marketplace",
+  "owner": {
+    "name": "Rajib Deb"
+  },
+  "metadata": {
+    "description": "Rajib's Claude Code plugins, each sourced from its own GitHub repo",
+    "version": "1.0.1"
+  },
+  "plugins": [
+    {
+      "name": "hello-plugin",
+      "description": "Starter plugin with a friendly greeting skill",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/rajib76/hello-plugin.git"
+      },
+      "category": "examples",
+      "keywords": ["starter", "example", "skill"]
+    }
+  ]
+}</code></pre></div>
+        <p><code>category</code> and <code>keywords</code> are optional. They help people find the plugin in the <code>/plugin</code> Discover tab. The entry has no <code>version</code> because the plugin's own <code>plugin.json</code> sets it. The docs warn against setting it in both places: <code>plugin.json</code> silently wins, and <code>validate</code> reports a mismatch.</p>
+
+        <h3>Step 3 · Validate, push and install</h3>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>claude plugin validate .
+git add -A &amp;&amp; git commit -m "Add hello-plugin" &amp;&amp; git push</code></pre></div>
+        <div class="code"><div class="label"><span>claude code</span><button class="copy" type="button">Copy</button></div><pre><code>/plugin marketplace add rajib76/rajib-skill-marketplace
+/plugin install hello-plugin@rajib-skill-marketplace</code></pre></div>
+
+        <h3>Adding more plugins</h3>
+        <ol class="steps">
+          <li>Create a repo with <code>.claude-plugin/plugin.json</code> at its root.</li>
+          <li>Append an entry to <code>plugins</code> with a <code>url</code> source. Add <code>"ref": "v1.0.0"</code> to pin a tag.</li>
+          <li>Validate, commit and push the marketplace repo.</li>
+          <li>Users run <code>/plugin marketplace update rajib-skill-marketplace</code> to see the new plugin.</li>
+        </ol>
+      </section>
+
+      <!-- 7 -->
+      <section id="team">
+        <h2><span class="num">07</span>Roll out to a team</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/host-marketplace#register-the-marketplace-for-everyone-in-a-repository">Register for a repository</a> · <a href="https://code.claude.com/docs/en/plugins/org">Manage plugins for your organization</a></p>
+        <p>To give everyone on a project the same plugins, commit the marketplace and the enabled plugins to the project's <code>.claude/settings.json</code>. Claude Code registers the marketplace for each teammate who trusts the folder, and each of them installs the plugin on their own machine.</p>
+        <div class="code"><div class="label"><span>.claude/settings.json</span><button class="copy" type="button">Copy</button></div><pre><code>{
+  "extraKnownMarketplaces": {
+    "rajib-skill-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "rajib76/rajib-skill-marketplace"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "hello-plugin@rajib-skill-marketplace": true
+  }
+}</code></pre></div>
+        <p>Choosing <strong>Install for all collaborators on this repository (project scope)</strong> in <code>/plugin</code> writes these entries for you. From the command line, use <code>--scope project</code>:</p>
+        <div class="code"><div class="label"><span>terminal</span><button class="copy" type="button">Copy</button></div><pre><code>claude plugin marketplace add rajib76/rajib-skill-marketplace --scope project
+claude plugin install hello-plugin@rajib-skill-marketplace --scope project</code></pre></div>
+        <p>For a whole company, an administrator can put the same <code>extraKnownMarketplaces</code> and <code>enabledPlugins</code> keys in managed settings, turn on auto-update for everyone, and restrict which marketplaces people can add. On Team and Enterprise plans, the marketplace can also be synced through claude.ai organization settings, so users' git credentials aren't involved.</p>
+      </section>
+
+      <!-- 8 -->
+      <section id="updates">
+        <h2><span class="num">08</span>Release updates</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/host-marketplace#keep-users-up-to-date">Keep users up to date</a> · <a href="https://code.claude.com/docs/en/plugins/loading#versions-and-updates">Versions and updates</a></p>
+        <p>Users get a new copy of a plugin only when its version changes. The version comes from <code>plugin.json</code> first, then from the marketplace entry. Pick one approach:</p>
+        <ul>
+          <li><strong>Bump <code>version</code> on each release.</strong> Users stay on their cached copy until the string changes. If you push new commits but leave <code>"version": "1.0.0"</code>, users don't get them.</li>
+          <li><strong>Leave <code>version</code> out</strong> of both <code>plugin.json</code> and the entry. Users then track your commits.</li>
+        </ul>
+        <ol class="steps">
+          <li>Change the plugin and bump <code>version</code> in its <code>plugin.json</code>, for example <code>1.0.0</code> → <code>1.1.0</code>.</li>
+          <li>Push the plugin repo, then the marketplace repo if you changed it.</li>
+          <li>Users run <code>/plugin marketplace update &lt;name&gt;</code> in a session, or <code>claude plugin update &lt;plugin&gt;@&lt;marketplace&gt;</code> in the shell.</li>
+        </ol>
+        <p>Background auto-update is off by default and <code>marketplace.json</code> can't turn it on. Each user enables it under <strong>Marketplaces</strong> in <code>/plugin</code> → <strong>Enable auto-update</strong>, or an admin sets <code>"autoUpdate": true</code> in managed settings.</p>
+        <p>To control exactly what users get, tag releases in the plugin repo and pin the entry with <code>"ref": "v1.1.0"</code>. For stable and early-access tracks, host two marketplaces with different names whose entries point at different refs.</p>
+        <h3>Renaming or removing a plugin</h3>
+        <p>Changing a plugin's <code>name</code> breaks every existing install. To change only the label people see, set <code>displayName</code> in <code>plugin.json</code>. If you must rename or remove one, add a top-level <code>renames</code> map such as <code>{"formatter": "code-formatter", "legacy-linter": null}</code> so Claude Code migrates existing users.</p>
+      </section>
+
+      <!-- 9 -->
+      <section id="trouble">
+        <h2><span class="num">09</span>Troubleshooting</h2>
+        <p class="docref">Docs: <a href="https://code.claude.com/docs/en/plugins/troubleshooting">Troubleshoot plugins</a> · <a href="https://code.claude.com/docs/en/plugins/host-marketplace#grant-access-to-a-private-marketplace">Grant access to a private marketplace</a></p>
+
+        <h3>“git@github.com: Permission denied (publickey)”</h3>
+        <p>This came up while building the GitHub example. For a GitHub <code>owner/repo</code> source, the docs say Claude Code probes <code>ssh -T git@github.com</code>, clones over SSH when the probe succeeds, and falls back to HTTPS otherwise. On a machine with a partial SSH setup (here, a <code>known_hosts</code> file but no key registered with GitHub), the install still failed with this error.</p>
+        <div class="callout warn"><strong>Fix</strong><p>As the marketplace owner, use a <code>url</code> source with the HTTPS address: <code>{"source": "url", "url": "https://github.com/rajib76/hello-plugin.git"}</code>. The docs confirm an <code>https://</code> URL always clones over HTTPS, and a public repo needs no credentials. As a user, set <code>CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1</code> to skip the SSH probe for <code>github</code> sources.</p></div>
+
+        <h3>git push returns 403</h3>
+        <p>The credential git has saved for github.com belongs to a different account, or its token has expired. If you use the GitHub CLI, <code>gh auth setup-git</code> tells git to use your <code>gh</code> login.</p>
+
+        <h3>Plugin not found when installing</h3>
+        <p>Check the id. It's <code>&lt;entry name&gt;@&lt;marketplace name&gt;</code>, both taken from the JSON <code>name</code> fields. Run <code>claude plugin marketplace list</code> to see the marketplace names you've added. If the entry name differs from the <code>name</code> in <code>plugin.json</code>, installing by the manifest name fails with <code>Plugin "&lt;name&gt;" not found in marketplace</code>.</p>
+        <h3>“Source path does not exist”</h3>
+        <p>A relative <code>source</code> points at a folder that isn't there. Validation passes in this case, so the error only appears at install. Write the path from the marketplace root.</p>
+        <h3>“The name '…' is reserved for official Anthropic marketplaces”</h3>
+        <p>Your marketplace uses one of Anthropic's names, such as <code>claude-plugins-official</code>. Rename it.</p>
+
+        <h3>Skill never triggers</h3>
+        <p>Make the <code>description</code> in <code>SKILL.md</code> more specific about when to use it. Start a new session after installing, and confirm the plugin is enabled with <code>claude plugin list</code>.</p>
+
+        <h3>Changes don't show up</h3>
+        <p>For a hosted marketplace, bump the plugin <code>version</code>, run <code>/plugin marketplace update</code>, and update the plugin. For a local-folder marketplace, run <code>/reload-plugins</code>. Check the Errors tab in <code>/plugin</code> for load errors.</p>
+      </section>
+
+      <!-- 10 -->
+      <section id="cheatsheet">
+        <h2><span class="num">10</span>Cheat sheet</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Task</th><th>Command</th></tr></thead>
+          <tbody>
+            <tr><td>Open the plugin manager</td><td><code>/plugin</code></td></tr>
+            <tr><td>Check a marketplace or plugin</td><td><code>claude plugin validate &lt;path&gt;</code></td></tr>
+            <tr><td>Add a marketplace</td><td><code>/plugin marketplace add &lt;owner/repo | url | path&gt;</code></td></tr>
+            <tr><td>List marketplaces</td><td><code>claude plugin marketplace list</code></td></tr>
+            <tr><td>Refresh a marketplace</td><td><code>/plugin marketplace update &lt;name&gt;</code></td></tr>
+            <tr><td>Remove a marketplace</td><td><code>/plugin marketplace remove &lt;name&gt;</code></td></tr>
+            <tr><td>Install a plugin</td><td><code>/plugin install &lt;plugin&gt;@&lt;marketplace&gt;</code></td></tr>
+            <tr><td>List installed plugins</td><td><code>claude plugin list</code></td></tr>
+            <tr><td>Disable or enable</td><td><code>/plugin disable &lt;id&gt;</code> · <code>/plugin enable &lt;id&gt;</code></td></tr>
+            <tr><td>Uninstall</td><td><code>/plugin uninstall &lt;plugin&gt;@&lt;marketplace&gt;</code></td></tr>
+            <tr><td>Install for a whole project</td><td><code>claude plugin install &lt;id&gt; --scope project</code></td></tr>
+            <tr><td>Update a plugin</td><td><code>claude plugin update &lt;plugin&gt;@&lt;marketplace&gt;</code></td></tr>
+            <tr><td>See what a plugin loaded</td><td><code>claude plugin details &lt;plugin&gt;</code></td></tr>
+            <tr><td>Reload plugins in a session</td><td><code>/reload-plugins</code></td></tr>
+            <tr><td>Try a plugin without a marketplace</td><td><code>claude --plugin-dir ./my-plugin</code></td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <!-- 11 -->
+      <section id="docs">
+        <h2><span class="num">11</span>Official docs</h2>
+        <p>This tutorial follows the Claude Code documentation. Start with the overview, then read the page for the step you're on.</p>
+        <ul class="refs">
+          <li><a href="https://code.claude.com/docs/en/plugins/overview">Plugins overview</a><span>What a plugin and a marketplace are, install scopes, and when you need a plugin</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/create">Create a plugin</a><span>Build a plugin from an empty folder, and develop with <code>--plugin-dir</code></span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/components">Plugin components</a><span>Every component type, with a directory explorer</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/manifest-reference">Manifest reference</a><span>All <code>plugin.json</code> fields</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/create-marketplace">Create a marketplace</a><span>Write <code>marketplace.json</code>, choose sources, validate and test</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/marketplace-reference">Marketplace reference</a><span>All <code>marketplace.json</code> fields, source types and validation messages</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/host-marketplace">Host and maintain a marketplace</a><span>Hosting, private access, updates, release channels and renames</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/publish">Publish and distribute a plugin</a><span>Share without a marketplace, or submit to Anthropic's directory</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/install">Install and manage plugins</a><span>The user side: install, scopes, disable and uninstall</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/org">Manage plugins for your organization</a><span>Managed settings: require, restrict and pre-install plugins</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/security">Plugin security and trust</a><span>What to review before installing, and marketplace tiers</span></li>
+          <li><a href="https://code.claude.com/docs/en/plugins/troubleshooting">Troubleshoot plugins</a><span>The errors users see and how to fix them</span></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.copy').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var pre = btn.closest('.code').querySelector('pre');
+    var text = pre.innerText.split('\n').filter(function (l) { return !/^\s*# ✔/.test(l); }).join('\n');
+    function done(label) { btn.textContent = label; setTimeout(function () { btn.textContent = 'Copy'; }, 1500); }
+    try {
+      navigator.clipboard.writeText(text).then(function () { done('Copied'); }, function () { selectText(pre); done('Selected'); });
+    } catch (e) { selectText(pre); done('Selected'); }
+  });
+});
+function selectText(el) {
+  var r = document.createRange(); r.selectNodeContents(el);
+  var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+</script>
+</body>
+</html>

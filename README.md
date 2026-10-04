@@ -2,6 +2,8 @@
 
 A Claude Code plugin marketplace. Every plugin lives in its own GitHub repo and is referenced here by its HTTPS clone URL (a `url` source), so installs work without SSH keys.
 
+Read the full tutorial: [docs/plugin-marketplace-tutorial.html](docs/plugin-marketplace-tutorial.html) (download it and open it in a browser).
+
 ## Use it
 
 ```
