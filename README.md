@@ -1,6 +1,6 @@
 # rajib-skill-marketplace
 
-A Claude Code plugin marketplace. Every plugin lives in its own GitHub repo and is referenced here with a `github` source.
+A Claude Code plugin marketplace. Every plugin lives in its own GitHub repo and is referenced here by its HTTPS clone URL (a `url` source), so installs work without SSH keys.
 
 ## Use it
 
@@ -24,7 +24,7 @@ A Claude Code plugin marketplace. Every plugin lives in its own GitHub repo and 
    {
      "name": "my-plugin",
      "description": "What it does",
-     "source": { "source": "github", "repo": "rajib76/my-plugin" }
+     "source": { "source": "url", "url": "https://github.com/rajib76/my-plugin.git" }
    }
    ```
 
